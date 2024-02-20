@@ -3,6 +3,16 @@
 #  XRO: A nonlinear e*X*tended *R*echarge *O*scillator model 
 #
 ############################################################################
+'''
+The **XRO** is an e**X**tended nonlinear **R**echarge **O**scillator model for El Niño-Southern Oscillation (ENSO) and other modes of variability in the global oceans. It builds on the legacies of the Hasselmann stochastic climate model capturing upper ocean memory in SST variability, and the recharge oscillator model for the oscillatory core dynamics of ENSO. It constitutes a parsimonious representation of the climate system in a reduced variable and parameter space that still captures the essential dynamics of interconnected global climate variability. 
+
+For the detailed formulation of XRO model, please refer to our paper Zhao et al. (2024)
+Zhao, S., Jin, F.-F., Stuecker, M.F., Thompson, P.R., Kug, J.-S., McPhaden, M.J., Cane, M.A., Wittenberg, A.T., Cai, W., (Under review). Explainable El Niño predictability from climate mode interactions. Nature.
+
+This repository hosts the [python package](https://github.com/senclimate/XRO) for `XRO` model. We have designed `XRO` to be user-friendly, aiming to be a valuable tool not only for research but also for operational forecasting and as an educational resource in the classroom. We hope that XRO proves to be both a practical and accessible tool that enhances your research and teaching experiences. 
+
+If you encounter problems in running `XRO` or have questions, please feel free to contact Sen Zhao (zhaos@hawaii.edu).
+'''
 
 import numpy as np
 import xarray as xr
