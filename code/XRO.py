@@ -25,10 +25,10 @@ class XRO(object):
     def __init__(self, ncycle=12, ac_order=2, is_forward=True, taus=None, maxlags=2):
         """
         initialize the XRO
-            ncycle  : cycles per year, ncycle=12 is monthly data, ncycle=52 is weekly data, ncycle=365 is daily data
+            ncycle  : cycles per year, ncycle=12 is monthly data, ncycle=52 is weekly data, ncycle=365 is daily data (no leap）
             ac_order: degree of accountted seasonal cycle, 0: annual mean, 1: annual cycle, 2: semi-annual cycle
             is_forward: use forward differencing when calculating the gradient, otherwise using center differencing
-            taus    : [1, 1, 1] time step for lag corvariance for each ac_order
+            taus      : [1, 1, 1] time step for lag corvariance for each ac_order
             noise fitting parameters:
             maxlags : maxlags is the number lags to fit the noise memory by treating the residual as red noise
         """
@@ -51,7 +51,7 @@ class XRO(object):
     def _preprocess(self, X, Y, time=None, is_remove_nan=True):
         '''
             preprocess the X, Y
-            remove
+            remove NaN in the time series of X, Y
         '''
         rank_x, ntim_x = X.shape
         rank_y, ntim_y = Y.shape
@@ -323,7 +323,7 @@ class XRO(object):
 
         normY_stdac = fit_ds['Y_stdac'].copy(deep=True)
         normYfit_stdac = fit_ds['Yfit_stdac'].copy(deep=True)
-        
+
         for j in range(rank_y):
             for i in range(rank_x):
                 normLac.loc[dict(ranky=j+1, rankx=i+1)] = fit_ds['Lac'].loc[dict(ranky=j+1, rankx=i+1)] * stddev_X_np[i]/stddev_X_np[j]
@@ -331,7 +331,7 @@ class XRO(object):
                 normXi_stdac.loc[dict(ranky=j+1)] = fit_ds['xi_stdac'].loc[dict(ranky=j+1)] / stddev_X_np[j]
                 normY_stdac.loc[dict(ranky=j+1)] = fit_ds['Y_stdac'].loc[dict(ranky=j+1)] / stddev_X_np[j]
                 normYfit_stdac.loc[dict(ranky=j+1)] = fit_ds['Yfit_stdac'].loc[dict(ranky=j+1)] / stddev_X_np[j]
-            
+
         norm_fit = xr.Dataset({'normLac': normLac,
                               'normxi_std': normXi_std,
                               'normxi_stdac': normXi_stdac,
@@ -521,7 +521,7 @@ class XRO(object):
                  time=None, is_xi_stdac=False):
         '''
 
-        Integration of XRO model include linear and nonlinear
+        Integration of XRO model include linear and nonlinear operators and/or noise forcings
 
         '''
         var_names = list(X0_ds.data_vars)
@@ -558,7 +558,7 @@ class XRO(object):
                          ncopy=1, seed=None, noise_type='red', is_xi_stdac=False):
         '''
 
-        Integration of XRO model include linear and nonlinear
+        Integration of XRO model include linear and nonlinear operators and/or noise forcings
 
         '''
         ncycle = len(fit_ds.cycle)
