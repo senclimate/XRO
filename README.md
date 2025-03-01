@@ -13,17 +13,28 @@ $$
 \frac{d}{dt} \begin{pmatrix} X_{\text{ENSO}} \\ X_M \end{pmatrix} = L \begin{pmatrix} X_{\text{ENSO}} \\ X_M \end{pmatrix} + \begin{pmatrix} N_{\text{ENSO}} \\ N_M \end{pmatrix} + \sigma_{\xi} G \xi, \quad (1)
 $$
 
+
 $$
 \frac{d\xi}{dt} = -r_{\xi} \xi + w(t), \quad (2)
 $$
+
+
 where 
+
+
 $$
 X_{\text{ENSO}} = [T_{\text{ENSO}}, h ]
 $$
+
+
 and 
+
+
 $$
 X_M = [T_{\text{NPMM}}, T_{\text{SPMM}}, T_{\text{IOB}}, T_{\text{IOD}}, T_{\text{SIOD}}, T_{\text{TNA}}, T_{\text{ATL3}}, T_{\text{SASD}}]
 $$
+
+
 are state vectors of ENSO and other climate modes, respectively. This model allows for two-way interactions between ENSO and the other modes. $L$, $N$, $G(X)$ describe linear, nonlinear, multiplicative noise dynamics. For the detailed formulation of XRO model, please refer to our paper Zhao et al. (2024)[[1]](#1) in Nature ([v0.1](https://github.com/senclimate/XRO/tree/v0.1)). 
 
 This repository hosts the [python package](https://github.com/senclimate/XRO) for `XRO` model. We have designed `XRO` to be user-friendly, aiming to be a valuable tool not only for research but also for operational forecasting and as an educational resource in the classroom. We hope that XRO proves to be both a practical and accessible tool that enhances your research and teaching experiences. 
