@@ -808,7 +808,7 @@ class XRO(object):
                 RO_para[NL_var] = fit_ds['NROT_Lac'].isel(nro_form=i).drop_vars({'nro_form'})
         if 'NROH_Lac' in fit_ds:
             for i, NL_var in enumerate(['bH_1', 'bH_2', 'cH_1', 'cH_2', 'cH_3']):
-                RO_para[NL_var] = fit_ds['NROT_Lac'].isel(nro_form=i).drop_vars({'nro_form'})
+                RO_para[NL_var] = fit_ds['NROH_Lac'].isel(nro_form=i).drop_vars({'nro_form'})
 
         # Assign metadata (long names, units, encoding)
         for var in RO_para.data_vars:
