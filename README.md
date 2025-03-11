@@ -41,6 +41,8 @@ This repository hosts the [python package](https://github.com/senclimate/XRO) fo
 
 If you encounter problems in running `XRO` or have questions, please feel free to contact Sen Zhao (zhaos@hawaii.edu).
 
+---
+
 ## XRO functionalities
 
 [`XRO`](https://github.com/senclimate/XRO) model is implemented in `python` with dependencies on only [`numpy`](https://numpy.org/) and [`xarray`](https://docs.xarray.dev/en/stable/). Key functionalities include:
@@ -49,14 +51,21 @@ If you encounter problems in running `XRO` or have questions, please feel free t
 - `XRO.simulate` is a precedure to perform stochastic simulations with the trained parameters
 - `XRO.reforecast`is a precedue to perform reforecasting or forecasting using the trained parameters and initial condictions
 
+
 ## Quick Start 
 
 `XRO_Cookbook.ipynb` is a Jupyter Notebook showing how to use `XRO` and reproduce the analysis of Zhao et al. 2024[[1]](#1). To successfully run the example, these open-source python modules may be necessary: [`numpy`](https://numpy.org/), [`xarray`](https://docs.xarray.dev/en/stable/), [`climpred`](https://climpred.readthedocs.io/en/stable/), [`matplotlib`](https://matplotlib.org/), and [`datetime`](https://docs.python.org/3/library/datetime.html). 
 
+---
 
+## Applications
+
+- The repository [**Recharge Oscillator (RO) Practical**](https://github.com/senclimate/RO_practical) for the [ENSO Winter School 2025](https://sites.google.com/hawaii.edu/enso-winter-school-2025/). The practical covers theoretical and computational aspects of the RO framework, its applications in ENSO simulations, and forecasting. When other climate modes are not considered, the `XRO` simplifies to the `RO`, making it well-suited for use in this practical context.
+
+---
 ## Acknowledgement
 
-Kindly requested to cite our paper Zhao et al. (2024) [[1]](#1) if use the XRO model in your published works.
+Kindly requested to cite our paper Zhao et al. (2024) [[1]](#1) and code [[2]](#2) if use the XRO model in your published works.
 
 ## References
 <a id="1">[1]</a> 
