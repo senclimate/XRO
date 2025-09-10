@@ -1,60 +1,10 @@
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
-
-###########################################
-def time_axis(tim, offset=False, freq='MS'):
-    if freq=='MS':
-        xtime = tim.dt.year + (tim.dt.month-0.5)/12.
-        if offset:
-            xtime = xtime - tim.dt.year[0]
-    elif freq=='D':
-        xtime = tim.dt.year + (tim.dt.dayofyear-0.5)/365
-        if offset:
-            xtime = xtime - tim.dt.year[0]
-    return xtime
 
 
-def plot_above_below_shading(x_ds, above=0.5, below=-0.5, c='black',
-                             above_c='#E5301D', below_c='#301D80', alpha_fill=0.8,
-                             xtime=None, ax=None,
-                             **kwargs):
-    if xtime is None:
-        x_axis = time_axis(x_ds.time)
-    else:
-        x_axis = xtime
-
-    if ax is None:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-
-    ax.plot(x_axis, x_ds, c=c, **kwargs)
-    ax.fill_between(x_axis, x_ds, above, where=x_ds>=above, interpolate=True, color=above_c, alpha=alpha_fill)
-    ax.fill_between(x_axis, x_ds, below, where=x_ds<=below, interpolate=True, color=below_c, alpha=alpha_fill)
-    return ax
-
-def plot_fill_between(x_ds, dim='member', c='orangered', alpha=0.2, xtime=None, ax=None, option=None, **kwargs):
-    
-    if xtime is None:
-        x_axis = time_axis(x_ds.time)
-    else:
-        x_axis = xtime
-
-    if ax is None:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-
-    if option is None:
-        x_lo = x_ds.mean(dim) - x_ds.std(dim)
-        x_up = x_ds.mean(dim) + x_ds.std(dim)
-    else:
-        x_lo = x_ds.quantile(option, dim=dim)
-        x_up = x_ds.quantile(1-option, dim=dim)
-        
-    ax.plot(x_axis, x_ds.mean(dim), c=c, **kwargs)
-    ax.fill_between(x_axis, x_lo, x_up, fc=c, alpha=alpha)
-    return ax
-
-
+######################################################################
 def compute_skew(da, dim):
+    """Compute skewness along the specified dimension."""
     mean_da = da.mean(dim=dim)
     std_da = da.std(dim=dim)
     skewness = ((da - mean_da) / std_da) ** 3
@@ -82,10 +32,136 @@ class SkewAccessor:
                 skews[name] = compute_skew(da, dim)
             return xr.Dataset(skews)
 
+class GroupBySkewAccessor:
+    def __init__(self, groupby_object):
+        self._groupby = groupby_object
+
+    def __call__(self, dim='time'):
+        if isinstance(self._groupby._obj, (xr.Dataset, xr.DataArray)):
+            return self._groupby.map(lambda x: compute_skew(x, dim=dim))
+
+        raise TypeError("The groupby object must be a DatasetGroupBy or DataArrayGroupBy")
+
+xr.core.groupby.DataArrayGroupBy.skew = property(lambda self: GroupBySkewAccessor(self))
+xr.core.groupby.DatasetGroupBy.skew = property(lambda self: GroupBySkewAccessor(self))
 
 ######################################################################
 
-def pmtm(ds_x, dim='time', dt=1/12., nw=4, cl=0.95, nfft=None, scale_by_freq=True):
+def compute_kurtosis(da, dim):
+    """Compute kurtosis along the specified dimension."""
+    mean_da = da.mean(dim=dim)
+    std_da = da.std(dim=dim)
+    kurt = ((da - mean_da) / std_da) ** 4
+    return kurt.mean(dim=dim) - 3  # Excess kurtosis
+    
+@xr.register_dataarray_accessor("kurt")
+@xr.register_dataset_accessor("kurt")
+class KurtAccessor:
+    """
+    Calculate the kurtosis using xarray.
+    """
+    def __init__(self, xarray_obj):
+        self._obj = xarray_obj
+
+    def __call__(self, dim='time'):
+        """
+        Compute kurtosis along the given dimension.
+        """
+        if isinstance(self._obj, xr.DataArray):
+            return compute_kurtosis(self._obj, dim)
+
+        elif isinstance(self._obj, xr.Dataset):
+            kurts = {}
+            for name, da in self._obj.data_vars.items():
+                kurts[name] = compute_kurtosis(da, dim)
+            return xr.Dataset(kurts)
+
+class GroupByKurtAccessor:
+    def __init__(self, groupby_object):
+        self._groupby = groupby_object
+
+    def __call__(self, dim='time'):
+        if isinstance(self._groupby._obj, (xr.DataArray, xr.Dataset)):
+            return self._groupby.map(lambda x: compute_kurtosis(x, dim=dim))
+        raise TypeError("The groupby object must be a DatasetGroupBy or DataArrayGroupBy")
+
+xr.core.groupby.DataArrayGroupBy.kurt = property(lambda self: GroupByKurtAccessor(self))
+xr.core.groupby.DatasetGroupBy.kurt = property(lambda self: GroupByKurtAccessor(self))
+
+######################################################################
+
+def _xcorrnan(x, y, demean=True, maxlags=12):
+    '''
+    %find the cross correlation with missing values
+    %formula is c(k) = 1/(N-k) * sum((X(t)-X')(Y(t+k)-Y'))/(std(X) * std(Y)) for k = 0,1,......,N-1
+    %           c(k) = 1/(N-k) * sum((Y(t)-Y')(X(t+k)-X'))/(std(X) * std(Y)) for k =-1,-2......,-(N-1)
+    % Input parameters:
+    %        X, Y : two vectors among which the cross correlation is to be computed (type: real)
+    %       maxlags (optional): maximum time lag it will look for. default value is minimum length among X and Y.
+    % Output parameters:
+    %        c: cross correlation score
+    %        lags: corresponding lags of c values
+    %        cross_cov: cross covariance score
+    credit from https://github.com/kleinberg-lab/FLK-NN/blob/master/xcorr_w_miss.m
+    '''
+    Nx = len(x)
+    if Nx != len(y):
+        raise ValueError('x and y must be equal length')
+
+    if demean:
+        x = np.array(x - np.nanmean(x))
+        y = np.array(y - np.nanmean(y))
+
+    if maxlags is None:
+        maxlags = Nx - 1
+
+    if maxlags >= Nx or maxlags < 1:
+        raise ValueError('maglags must be None or strictly '
+                         'positive < %d' % Nx)
+
+    x_std = np.nanstd(x)
+    y_std = np.nanstd(y)
+
+    lags = np.arange(-maxlags, maxlags + 1, dtype=np.int32)
+    c = np.full_like(lags, np.nan, dtype=float)
+    cross_cov = np.full_like(lags, np.nan, dtype=float)
+
+    for k in lags:
+        if k > 0:
+            tempCrossCov = np.nanmean(y[:-k] * x[k:])
+        elif k == 0:
+            tempCrossCov = np.nanmean(x * y)
+        else:
+            tempCrossCov = np.nanmean(x[:k] * y[-k:])
+        cross_cov[k+maxlags] = tempCrossCov
+        c[k+maxlags] = tempCrossCov/(x_std*y_std)
+    xr_c = xr.DataArray(c, coords=[lags], dims=["lag"])
+    return xr_c
+
+
+def xcorr(xr_var1, xr_var2, maxlags=12, units='month', dim='time'):
+    '''
+    xarray lead-lag correlations
+    '''
+    lags = np.arange(-maxlags, maxlags + 1, dtype=np.int32)
+    lags_out = xr.DataArray(lags, coords={'lag': lags}, dims=['lag'], name=['lag'],
+                            attrs={'long_name': 'lag', 'units': units, '_FillValue': -32767.})  # 'axis': 'T',
+
+    xr_corr = xr.apply_ufunc(_xcorrnan, xr_var1, xr_var2,
+                             input_core_dims=[[dim], [dim]],
+                             output_core_dims=[['lag']],
+                             kwargs={'maxlags': maxlags},
+                             vectorize=True)
+    xr_corr = xr_corr.assign_coords({"lag": lags_out})
+    xr_corr.encoding['_FillValue'] = 1.e+20
+    xr_corr.encoding['dtype'] = 'float32'
+    return xr_corr
+    
+
+######################################################################
+
+def pmtm(ds_x, dim='time', dt=1/12., nw=4, cl=0.95, nfft=None, scale_by_freq=True, lag1_r=None,
+         return_dataset=False):
     """
     Thomson’s multitaper power spectral density (PSD) estimate, 
     PSD significance level estimate, Confidence Intervals
@@ -105,6 +181,10 @@ def pmtm(ds_x, dim='time', dt=1/12., nw=4, cl=0.95, nfft=None, scale_by_freq=Tru
         Confidence interval to calculate and display
     nfft: int
         Default 
+    lag1_r: float
+        significance test for AR(1) lag1_r value
+    return_dataset: True or False
+        return xarray dataset
 
     Returns
     -------
@@ -118,7 +198,7 @@ def pmtm(ds_x, dim='time', dt=1/12., nw=4, cl=0.95, nfft=None, scale_by_freq=Tru
     P_ds, s_ds, Psig_ds, ci_ds = xr.apply_ufunc(_pmtm, ds_x, input_core_dims=[[dim]],
                              output_core_dims=[['freq'], ['freq'], ['freq'], ['freq', 'bound', ]],
                              kwargs={'dt': dt, 'nw': nw, 'cl': cl,
-                                     'nfft': nfft, 'scale_by_freq': scale_by_freq},
+                                     'nfft': nfft, 'scale_by_freq': scale_by_freq, 'lag1_r': lag1_r},
                              vectorize=True)
     if len(s_ds.dims)==1:
         P_ds = P_ds.assign_coords({'freq': s_ds})
@@ -129,7 +209,17 @@ def pmtm(ds_x, dim='time', dt=1/12., nw=4, cl=0.95, nfft=None, scale_by_freq=Tru
         P_ds = P_ds.assign_coords({'freq': s_ds.isel({mem_dim: 0}).values})
         Psig_ds = Psig_ds.assign_coords({'freq': s_ds.isel({mem_dim: 0}).values})
         ci_ds = ci_ds.assign_coords({'freq': s_ds.isel({mem_dim: 0}).values})
-    return P_ds, Psig_ds, ci_ds
+
+    if return_dataset:
+        out_ds = xr.Dataset({'P': P_ds, 'Psig': Psig_ds, 'Pci': ci_ds})
+        out_ds.attrs['dt'] = dt
+        out_ds.attrs['nw'] = nw
+        out_ds.attrs['cl'] = cl
+        out_ds.attrs['scale_by_freq'] = scale_by_freq
+        return out_ds
+    else:
+        return P_ds, Psig_ds, ci_ds
+
 
 
 def _pmtm(x, dt=1, nw=4, cl=0.95, nfft=None, scale_by_freq=True):
@@ -217,30 +307,4 @@ def _pmtm(x, dt=1, nw=4, cl=0.95, nfft=None, scale_by_freq=True):
     x_P_sig = xr.DataArray(P_sig, dims=['freq'], coords={'freq': s})
     x_ci = xr.DataArray(ci, dims=['freq', 'bound'], coords={'freq': s, 'bound': [0, 1]})
     return x_P, x_s, x_P_sig, x_ci
-
-
-def _unique_ordered(elements):
-    """ Return a list of unique elements in the order they first appeared. """
-    seen = set()
-    result = []
-    for element in elements:
-        if element not in seen:
-            seen.add(element)
-            result.append(element)
-    return result
-
-def legend_combo(ax, reverse=False, **kwargs):
-    """
-    create legend combo the same name together
-    """
-    handler, labeler = ax.get_legend_handles_labels()
-    hd = []
-    labli = _unique_ordered(labeler)
-    for lab in labli:
-        comb = [h for h,l in zip(handler,labeler) if l == lab]
-        hd.append(tuple(comb))
-    if reverse:
-        ax.legend(hd[::-1], labli[::-1], **kwargs)
-    else:
-        ax.legend(hd, labli, **kwargs)
 

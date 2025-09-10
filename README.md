@@ -43,6 +43,17 @@ If you encounter problems in running `XRO` or have questions, please feel free t
 
 ---
 
+## Installation
+You can install XRO in two ways:
+
+#### From PyPI
+
+```pip install XRO```
+
+#### From GitHub (latest development version)
+
+```pip install git+https://github.com/senclimate/XRO.git```
+
 ## XRO functionalities
 
 [`XRO`](https://github.com/senclimate/XRO) model is implemented in `python` with dependencies on only [`numpy`](https://numpy.org/) and [`xarray`](https://docs.xarray.dev/en/stable/). Key functionalities include:

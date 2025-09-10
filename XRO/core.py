@@ -2,34 +2,37 @@
 #
 #  XRO: A nonlinear e*X*tended *R*echarge *O*scillator model
 #  Author: Sen Zhao <zhaos@hawaii.edu>
-#  Reference: Zhao, S., Jin, F.-F., Stuecker, M.F., Thompson, P.R., Kug, J.-S., McPhaden, M.J., Cane, M.A., Wittenberg, A.T., Cai, W., (2024). 
-#             Explainable El Niño predictability from climate mode interactions. Nature. https://doi.org/10.1038/s41586-024-07534-6
+#
 ############################################################################
-
-"""
-The **XRO** is an e**X**tended nonlinear **R**echarge **O**scillator model for El Niño-Southern Oscillation (ENSO) 
-and other modes of variability in the global oceans. It builds on the legacies of the Hasselmann stochastic climate model 
-capturing upper ocean memory in SST variability, and the recharge oscillator model for the oscillatory core dynamics
-of ENSO. It constitutes a parsimonious representation of the climate system in a reduced variable and parameter space
-that still captures the essential dynamics of interconnected global climate variability. 
-
-For the detailed formulation of XRO model, please refer to our paper Zhao et al. (2024)
-
-This repository hosts the [python package](https://github.com/senclimate/XRO) for `XRO` model. We have designed
-`XRO` to be user-friendly, aiming to be a valuable tool not only for research but also for operational forecasting 
-and as an educational resource in the classroom. We hope that XRO proves to be both a practical and accessible 
-tool that enhances your research and teaching experiences. 
-
-If you encounter problems in running `XRO` or have questions, please feel free to contact Sen Zhao (zhaos@hawaii.edu).
-"""
 
 import numpy as np
 import xarray as xr
+from .stats import xcorr
 
 class XRO(object):
     """
     The XRO class
+
+    The **XRO** is an e**X**tended nonlinear **R**echarge **O**scillator model for El Niño-Southern Oscillation (ENSO) 
+    and other modes of variability in the global oceans. It builds on the legacies of the Hasselmann stochastic climate model 
+    capturing upper ocean memory in SST variability, and the recharge oscillator model for the oscillatory core dynamics
+    of ENSO. It constitutes a parsimonious representation of the climate system in a reduced variable and parameter space
+    that still captures the essential dynamics of interconnected global climate variability. 
+    
+    For the detailed formulation of XRO model, please refer to our paper Zhao et al. (2024)
+    Reference: Zhao, S., Jin, F.-F., Stuecker, M.F., Thompson, P.R., Kug, J.-S., McPhaden, M.J., 
+               Cane, M.A., Wittenberg, A.T., Cai, W., (2024). Explainable El Niño predictability from 
+               climate mode interactions. Nature. https://doi.org/10.1038/s41586-024-07534-6
+
+    This repository hosts the [python package](https://github.com/senclimate/XRO) for `XRO` model. We have designed
+    `XRO` to be user-friendly, aiming to be a valuable tool not only for research but also for operational forecasting 
+    and as an educational resource in the classroom. We hope that XRO proves to be both a practical and accessible 
+    tool that enhances your research and teaching experiences. 
+    
+    If you encounter problems in running `XRO` or have questions, please feel free to contact Sen Zhao (zhaos@hawaii.edu).
+    
     """
+    
     # ---------------------------------
     def __init__(self, ncycle=12, ac_order=2, is_forward=True,
                  taus=None, maxlags=2):
@@ -1249,74 +1252,6 @@ def _B_coeff(rank_y, ncopy, B=None):
             raise ValueError(f"B should be a scalar or a numpy array of shape ({rank_y},)")
         Bcoef = np.tile(B_array, (ncopy, 1)).T
     return Bcoef
-
-
-def _xcorrnan(x, y, demean=True, maxlags=12):
-    '''
-    %find the cross correlation with missing values
-    %formula is c(k) = 1/(N-k) * sum((X(t)-X')(Y(t+k)-Y'))/(std(X) * std(Y)) for k = 0,1,......,N-1
-    %           c(k) = 1/(N-k) * sum((Y(t)-Y')(X(t+k)-X'))/(std(X) * std(Y)) for k =-1,-2......,-(N-1)
-    % Input parameters:
-    %        X, Y : two vectors among which the cross correlation is to be computed (type: real)
-    %       maxlags (optional): maximum time lag it will look for. default value is minimum length among X and Y.
-    % Output parameters:
-    %        c: cross correlation score
-    %        lags: corresponding lags of c values
-    %        cross_cov: cross covariance score
-    credit from https://github.com/kleinberg-lab/FLK-NN/blob/master/xcorr_w_miss.m
-    '''
-    Nx = len(x)
-    if Nx != len(y):
-        raise ValueError('x and y must be equal length')
-
-    if demean:
-        x = np.array(x - np.nanmean(x))
-        y = np.array(y - np.nanmean(y))
-
-    if maxlags is None:
-        maxlags = Nx - 1
-
-    if maxlags >= Nx or maxlags < 1:
-        raise ValueError('maglags must be None or strictly '
-                         'positive < %d' % Nx)
-
-    x_std = np.nanstd(x)
-    y_std = np.nanstd(y)
-
-    lags = np.arange(-maxlags, maxlags + 1, dtype=np.int32)
-    c = np.full_like(lags, np.nan, dtype=float)
-    cross_cov = np.full_like(lags, np.nan, dtype=float)
-
-    for k in lags:
-        if k > 0:
-            tempCrossCov = np.nanmean(y[:-k] * x[k:])
-        elif k == 0:
-            tempCrossCov = np.nanmean(x * y)
-        else:
-            tempCrossCov = np.nanmean(x[:k] * y[-k:])
-        cross_cov[k+maxlags] = tempCrossCov
-        c[k+maxlags] = tempCrossCov/(x_std*y_std)
-    xr_c = xr.DataArray(c, coords=[lags], dims=["lag"])
-    return xr_c
-
-
-def xcorr(xr_var1, xr_var2, maxlags=12, units='month', dim='time'):
-    '''
-    xarray lead-lag correlations
-    '''
-    lags = np.arange(-maxlags, maxlags + 1, dtype=np.int32)
-    lags_out = xr.DataArray(lags, coords={'lag': lags}, dims=['lag'], name=['lag'],
-                            attrs={'long_name': 'lag', 'units': units, '_FillValue': -32767.})  # 'axis': 'T',
-
-    xr_corr = xr.apply_ufunc(_xcorrnan, xr_var1, xr_var2,
-                             input_core_dims=[[dim], [dim]],
-                             output_core_dims=[['lag']],
-                             kwargs={'maxlags': maxlags},
-                             vectorize=True)
-    xr_corr = xr_corr.assign_coords({"lag": lags_out})
-    xr_corr.encoding['_FillValue'] = 1.e+20
-    xr_corr.encoding['dtype'] = 'float32'
-    return xr_corr
 
 
 def _calc_a1(x, maxlags=6):
