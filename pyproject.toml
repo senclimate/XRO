@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "XRO"
-version = "1.0.0"
+version = "1.0.1"
 description = "The eXtended nonlinear Recharge Oscillator (XRO) model for ENSO and pantropical climate variability."
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "CC-BY-4.0" }
 authors = [{ name = "Sen Zhao", email = "zhaos@hawaii.edu" }]
 requires-python = ">=3.9"
 
@@ -19,7 +19,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/senclimate/XRO"
-Documentation = "https://senclimate.github.io/XRO/"
+Documentation = "https://senzhao.netlify.app/software/xro/"
 Repository = "https://github.com/senclimate/XRO"
 Issues = "https://github.com/senclimate/XRO/issues"
 

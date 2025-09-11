@@ -20,9 +20,11 @@ class XRO(object):
     that still captures the essential dynamics of interconnected global climate variability. 
     
     For the detailed formulation of XRO model, please refer to our paper Zhao et al. (2024)
-    Reference: Zhao, S., Jin, F.-F., Stuecker, M.F., Thompson, P.R., Kug, J.-S., McPhaden, M.J., 
-               Cane, M.A., Wittenberg, A.T., Cai, W., (2024). Explainable El Niño predictability from 
-               climate mode interactions. Nature. https://doi.org/10.1038/s41586-024-07534-6
+    Reference: 
+
+    Zhao, S., Jin, F.-F., Stuecker, M.F., Thompson, P.R., Kug, J.-S., McPhaden, M.J., 
+          Cane, M.A., Wittenberg, A.T., Cai, W., (2024). Explainable El Niño predictability from 
+          climate mode interactions. Nature. https://doi.org/10.1038/s41586-024-07534-6
 
     This repository hosts the [python package](https://github.com/senclimate/XRO) for `XRO` model. We have designed
     `XRO` to be user-friendly, aiming to be a valuable tool not only for research but also for operational forecasting 
