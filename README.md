@@ -18,7 +18,6 @@ $$
 \frac{d\xi}{dt} = -r_{\xi} \xi + w(t), \quad (2)
 $$
 
-
 where 
 
 
