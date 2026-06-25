@@ -1,6 +1,86 @@
 import numpy as np
 import xarray as xr
 
+# =========================================================
+# unified detrend (DataArray + Dataset)
+# =========================================================
+
+def detrend(obj, dim="time", order=1, fix_time_axis=True):
+    """
+    Remove polynomial trend from DataArray or Dataset.
+
+    Parameters
+    ----------
+    obj : xr.DataArray or xr.Dataset
+    dim : str
+    order : int
+        Polynomial order (1 = linear, 2 = quadratic, etc.)
+    fix_time_axis : bool
+        If True, convert time coordinate to numeric index for fitting.
+
+    Returns
+    -------
+    xr.DataArray or xr.Dataset
+        Detrended data with original coordinates restored.
+    """
+    
+    original_coord = obj[dim].copy()
+
+    # -----------------------------------------------------
+    # numeric axis ONLY for fitting
+    # -----------------------------------------------------
+    if fix_time_axis:
+        work = obj.copy()
+        work = work.assign_coords({dim: _numeric_axis(obj, dim)})
+    else:
+        work = obj
+
+    # -----------------------------------------------------
+    # polyfit
+    # -----------------------------------------------------
+    p = work.polyfit(dim=dim, deg=order, skipna=True)
+
+    # =====================================================
+    # CASE 1: DataArray
+    # =====================================================
+    if isinstance(obj, xr.DataArray):
+        fit = xr.polyval(work[dim], p.polyfit_coefficients)
+
+    # =====================================================
+    # CASE 2: Dataset (IMPORTANT FIX)
+    # =====================================================
+    else:
+        fit_vars = {}
+
+        for v in obj.data_vars:
+            coef_name = f"{v}_polyfit_coefficients"
+
+            if coef_name not in p:
+                raise KeyError(f"Missing polyfit result for {v}")
+
+            coeff = p[coef_name]
+
+            fit_vars[v] = xr.polyval(work[dim], coeff)
+
+        fit = xr.Dataset(fit_vars)
+
+    # -----------------------------------------------------
+    # restore coordinate BEFORE subtraction
+    # -----------------------------------------------------
+    fit = fit.assign_coords({dim: original_coord})
+
+    detrended = obj - fit
+
+    return _restore(detrended, dim, original_coord)
+
+
+def _numeric_axis(obj, dim):
+    return np.arange(obj.sizes[dim])
+
+
+def _restore(obj, dim, original):
+    return obj.assign_coords({dim: original})
+
 
 ######################################################################
 def compute_skew(da, dim):
