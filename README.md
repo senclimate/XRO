@@ -53,6 +53,15 @@ You can install XRO in two ways:
 
 ```pip install git+https://github.com/senclimate/XRO.git```
 
+
+## Quick Start 
+
+`XRO_Cookbook.ipynb` is a Jupyter Notebook showing how to use `XRO` and reproduce the analysis of Zhao et al. 2024[[1]](#1). To successfully run the example, these open-source python modules may be necessary: [`numpy`](https://numpy.org/), [`xarray`](https://docs.xarray.dev/en/stable/), [`climpred`](https://climpred.readthedocs.io/en/stable/), [`matplotlib`](https://matplotlib.org/), and [`datetime`](https://docs.python.org/3/library/datetime.html). 
+
+
+`XRO_realtime_states_forecasts.ipynb` is a Jupyter Notebook showing how to calculate latest `XRO` state vectors from ORAS5 and conduct the realtime forecasts. Opertional XRO forecasts can be found at https://senzhao.netlify.app/climate/xro/.
+
+
 ## XRO functionalities
 
 [`XRO`](https://github.com/senclimate/XRO) model is implemented in `python` with dependencies on only [`numpy`](https://numpy.org/) and [`xarray`](https://docs.xarray.dev/en/stable/). Key functionalities include:
@@ -61,10 +70,15 @@ You can install XRO in two ways:
 - `XRO.simulate` is a precedure to perform stochastic simulations with the trained parameters
 - `XRO.reforecast`is a precedue to perform reforecasting or forecasting using the trained parameters and initial condictions
 
+Additional helper utilities are provided for data preprocessing and statistical analysis, including:
 
-## Quick Start 
-
-`XRO_Cookbook.ipynb` is a Jupyter Notebook showing how to use `XRO` and reproduce the analysis of Zhao et al. 2024[[1]](#1). To successfully run the example, these open-source python modules may be necessary: [`numpy`](https://numpy.org/), [`xarray`](https://docs.xarray.dev/en/stable/), [`climpred`](https://climpred.readthedocs.io/en/stable/), [`matplotlib`](https://matplotlib.org/), and [`datetime`](https://docs.python.org/3/library/datetime.html). 
+- `calc_XRO_indices` – Compute the climate mode indices required by the XRO model (e.g., Niño3.4, WWV, NPMM, IOD, ATL3).
+- `detrend` – Remove linear or quadratic trends from `xarray.DataArray` or `xarray.Dataset` objects.
+- `skew` – Compute the skewness of climate variables.
+- `kurt` – Compute the kurtosis of climate variables.
+- `pmtm` - Thomson’s multitaper power spectral density (PSD) estimate
+- `xcorr` - Cross correlations
+- other functions can be found at `stats.py` `state.py` and `visual.py`
 
 ---
 

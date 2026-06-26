@@ -7,6 +7,10 @@
 
 import numpy as np
 import xarray as xr
+
+import pandas as pd
+from dateutil.relativedelta import relativedelta
+
 from .stats import xcorr
 
 class XRO(object):
@@ -1434,3 +1438,61 @@ def variable_model_to_xarray(model_X, var_names):
         else:
             model_ds[var] = tmp_var
     return model_ds
+
+
+def lead_to_time(ds, unit=None):
+    """
+    Convert a forecast lead coordinate to valid time.
+
+    Parameters
+    ----------
+    ds : xr.Dataset or xr.DataArray
+        Must contain 'lead' coordinate and scalar or length-1 'init'.
+    unit : str, optional
+        Override lead unit. Supported:
+        'month', 'week', 'day', 'pentad', 'year'.
+        If None, infer from ds.lead.attrs['units'].
+    """
+
+    # Get initialization time
+    if "init" in ds.dims:
+        if ds.sizes["init"] != 1:
+            raise ValueError( f"Expected exactly one initialization time, got {ds.sizes['init']}." )
+        init_time = pd.Timestamp(ds.init.values[0])
+        ds = ds.squeeze("init", drop=True)
+    else:
+        init_time = pd.Timestamp(ds.init.values)
+
+    # Infer unit
+    if unit is None:
+        unit = ds.lead.attrs.get("units", "months").lower()
+
+    # Build valid times
+    valid_time = []
+    for ld in ds.lead.values:
+        
+        ld = int(ld)
+        if unit in ["month", "months", "mon"]:
+            t = init_time + relativedelta(months=ld)
+
+        elif unit in ["year", "years", "yr"]:
+            t = init_time + relativedelta(years=ld)
+
+        elif unit in ["week", "weeks", "wk"]:
+            t = init_time + pd.Timedelta(weeks=ld)
+
+        elif unit in ["day", "days", "d"]:
+            t = init_time + pd.Timedelta(days=ld)
+
+        elif unit in ["pentad", "pentads"]:
+            t = init_time + pd.Timedelta(days=5 * ld)
+
+        else:
+            raise ValueError(
+                f"Unsupported lead unit '{unit}'. "
+                "Supported units: month, week, day, pentad, year."
+            )
+
+        valid_time.append(t)
+        
+    return ds.rename({"lead": "time"}).assign_coords(time=valid_time)
