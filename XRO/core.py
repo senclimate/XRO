@@ -1204,8 +1204,8 @@ def _solve_L_with_zero(G, C):
     L = np.zeros_like(G)
     # Calculate L using the non-zero submatrices
     try:
-        L_nonzero = np.dot(G_nonzero, np.linalg.inv(C_nonzero))
-    except np.linalg.inv.LinAlgError:
+        L_nonzero = np.linalg.solve(C_nonzero, G_nonzero.T).T
+    except np.linalg.LinAlgError:
         # Handle singular matrix or non-invertible case here
         L_nonzero = np.full((len(nonzero_rows), len(nonzero_cols)), np.nan)
 
@@ -1405,7 +1405,7 @@ def gen_noise(stddev, nyear=50, ncopy=1, init=None, seed=None, noise_type='white
         raise ValueError("Invalid noise_type. Must be 'white' or 'red'.")
 
     if ncycle == 12:
-        time = xr.cftime_range('0001-01', periods=nyear*ncycle, freq='MS')
+        time = xr.date_range('0001-01', periods=nyear*ncycle, freq='MS', use_cftime=True)
     else:
         time = tim
     members = np.arange(0, ncopy, step=1).astype(np.int32)
