@@ -1,4 +1,4 @@
-name: Publish CRO to PyPI
+name: Publish XRO to PyPI
 
 on:
   release:
