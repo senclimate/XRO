@@ -302,7 +302,7 @@ def pmtm(ds_x, dim='time', dt=1/12., nw=4, cl=0.95, nfft=None, scale_by_freq=Tru
 
 
 
-def _pmtm(x, dt=1, nw=4, cl=0.95, nfft=None, scale_by_freq=True):
+def _pmtm(x, dt=1, nw=4, cl=0.95, nfft=None, scale_by_freq=True, lag1_r=None):
     '''
         numpy of pmtm
     '''
@@ -374,7 +374,11 @@ def _pmtm(x, dt=1, nw=4, cl=0.95, nfft=None, scale_by_freq=True):
 
     # red noise significance levels
     # PSD significance level estimate modified from NCAR/NCL specx_ci 
-    alpha = np.corrcoef(x[:-1], x[1:])[0, 1]
+    if lag1_r is None:
+        alpha = np.corrcoef(x[:-1], x[1:])[0, 1]
+    else:
+        alpha = 0
+    
     dof = v
     P_red = (1 - alpha**2) / (1 + alpha**2 - 2 * alpha * np.cos(2 * np.pi * s * dt))
     # rescale
