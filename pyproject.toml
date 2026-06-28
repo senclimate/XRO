@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "XRO"
-version = "1.0.3"
+dynamic = ["version"]
 description = "The eXtended nonlinear Recharge Oscillator (XRO) model for ENSO and pantropical climate variability."
 readme = "README.md"
 license = { text = "CC-BY-4.0" }
@@ -15,7 +15,11 @@ dependencies = [
     "numpy>=1.20",
     "xarray>=2023.1.0",
     "matplotlib>=3.5",
+    "cftime>=1.6.0",
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "XRO.__version__"}
 
 [project.urls]
 Homepage = "https://github.com/senclimate/XRO"
